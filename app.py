@@ -12,8 +12,8 @@ def init_data_file():
     if not os.path.exists('data'):
         os.makedirs('data')
     if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'w') as f:
-            json.dump([], f)
+        with open(DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump([], f, ensure_ascii=False)
 
 def get_records():
     init_data_file()
@@ -23,16 +23,16 @@ def get_records():
 def save_record(record):
     records = get_records()
     records.append(record)
-    with open(DATA_FILE, 'w') as f:
-        json.dump(records, f, indent=2)
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(records, f, indent=2, ensure_ascii=False)
 
 def update_record(record_id, updated_data):
     records = get_records()
     for i, record in enumerate(records):
         if record['id'] == record_id:
             records[i] = {**record, **updated_data}
-            with open(DATA_FILE, 'w') as f:
-                json.dump(records, f, indent=2)
+            with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                json.dump(records, f, indent=2, ensure_ascii=False)
             return records[i]
     return None
 
@@ -68,13 +68,19 @@ def analyze_food(food):
     
     return result
 
-def generate_feedback(weight, food, exercise, exercise_info=None, fullness_data=None, hunger_data=None):
+def generate_feedback(record):
     records = get_records()
     feedback_parts = []
     
+    weight = record.get('weight')
+    food_data = record.get('food', {})
+    exercise = record.get('exercise', False)
+    exercise_info = record.get('exercise_info')
+    hunger_data = record.get('hunger', {})
+    
     if len(records) >= 1:
         prev_weight = records[-1]['weight']
-        weight_change = weight - prev_weight
+        weight_change = weight - prev_weight if weight and prev_weight else 0
         if weight_change < -0.5:
             feedback_parts.append(random.choice([
                 '体重下降了，太棒了！继续保持',
@@ -112,32 +118,38 @@ def generate_feedback(weight, food, exercise, exercise_info=None, fullness_data=
             '新的开始，祝你成功'
         ]))
     
-    if fullness_data:
-        avg_fullness = sum(fullness_data.values()) / len(fullness_data)
-        if avg_fullness >= 8:
-            feedback_parts.append(random.choice([
-                '今天每餐都吃得很饱，注意控制一下食量哦',
-                '饱腹感很强，明天可以稍微少吃点',
-                '吃了不少，明天适当减少一点'
-            ]))
-        elif avg_fullness >= 6:
-            feedback_parts.append(random.choice([
-                '今天吃得刚刚好，保持这个状态',
-                '饱腹感适中，很健康的状态',
-                '饮食份量合适，继续保持'
-            ]))
-        elif avg_fullness >= 4:
-            feedback_parts.append(random.choice([
-                '今天稍微有点饿，注意营养均衡',
-                '摄入稍微少了一点，要吃饱才有力气减肥',
-                '有点饿，记得吃够营养'
-            ]))
-        else:
-            feedback_parts.append(random.choice([
-                '今天感觉挺饿的，别太亏待自己',
-                '摄入有点少，记得吃饱才能更好减肥',
-                '饿了就要吃，别硬撑'
-            ]))
+    if food_data:
+        recorded_meals = [meal for meal in ['breakfast', 'lunch', 'dinner'] 
+                        if food_data.get(meal, {}).get('recorded', False)]
+        fullness_values = [food_data[meal]['fullness'] for meal in recorded_meals 
+                          if food_data[meal].get('fullness', 0) > 0]
+        
+        if fullness_values:
+            avg_fullness = sum(fullness_values) / len(fullness_values)
+            if avg_fullness >= 8:
+                feedback_parts.append(random.choice([
+                    '今天每餐都吃得很饱，注意控制一下食量哦',
+                    '饱腹感很强，明天可以稍微少吃点',
+                    '吃了不少，明天适当减少一点'
+                ]))
+            elif avg_fullness >= 6:
+                feedback_parts.append(random.choice([
+                    '今天吃得刚刚好，保持这个状态',
+                    '饱腹感适中，很健康的状态',
+                    '饮食份量合适，继续保持'
+                ]))
+            elif avg_fullness >= 4:
+                feedback_parts.append(random.choice([
+                    '今天稍微有点饿，注意营养均衡',
+                    '摄入稍微少了一点，要吃饱才有力气减肥',
+                    '有点饿，记得吃够营养'
+                ]))
+            else:
+                feedback_parts.append(random.choice([
+                    '今天感觉挺饿的，别太亏待自己',
+                    '摄入有点少，记得吃饱才能更好减肥',
+                    '饿了就要吃，别硬撑'
+                ]))
     
     if hunger_data and hunger_data.get('times', 0) > 0:
         hunger_times = hunger_data['times']
@@ -160,7 +172,15 @@ def generate_feedback(weight, food, exercise, exercise_info=None, fullness_data=
                 '饱腹感不错，继续保持'
             ]))
     
-    food_analysis = analyze_food(food)
+    food_descriptions = []
+    if food_data:
+        for meal in ['breakfast', 'lunch', 'dinner']:
+            meal_data = food_data.get(meal, {})
+            if meal_data.get('recorded', False) and meal_data.get('description'):
+                food_descriptions.append(meal_data['description'])
+    
+    food_text = ' '.join(food_descriptions)
+    food_analysis = analyze_food(food_text)
     
     if food_analysis['has_high_calorie']:
         feedback_parts.append(random.choice([
@@ -224,53 +244,35 @@ def get_all_records():
 def add_record():
     data = request.get_json()
     weight = float(data['weight']) if data.get('weight') else None
-    food = data.get('food', '')
+    food_data = data.get('food', {})
     exercise = data.get('exercise', False)
     exercise_info = data.get('exercise_info', None)
-    fullness_data = data.get('fullness', {})
     hunger_data = data.get('hunger', {})
     record_date = data.get('date', datetime.now().strftime('%Y-%m-%d'))
     
     existing_record = get_record_by_date(record_date)
     
     if existing_record:
-        # 判断是否是全天打卡（包含三餐）
-        is_full_day = all(key in fullness_data for key in ['breakfast', 'lunch', 'dinner'])
-        
         updated_data = {}
         if weight is not None:
             updated_data['weight'] = weight
-        if food:
-            if is_full_day:
-                # 全天打卡：覆盖食物信息
-                updated_data['food'] = food
-            else:
-                # 单餐打卡：追加食物信息
-                combined_food = existing_record.get('food', '') + ' | ' + food if existing_record.get('food') else food
-                updated_data['food'] = combined_food
+        
+        if food_data:
+            existing_food = existing_record.get('food', {})
+            for meal in ['breakfast', 'lunch', 'dinner']:
+                if meal in food_data:
+                    existing_food[meal] = food_data[meal]
+            updated_data['food'] = existing_food
+        
         updated_data['exercise'] = exercise
         if exercise_info:
             updated_data['exercise_info'] = exercise_info
-        if fullness_data:
-            if is_full_day:
-                # 全天打卡：覆盖饱腹感
-                updated_data['fullness'] = fullness_data
-            else:
-                # 单餐打卡：合并饱腹感
-                updated_data['fullness'] = {**existing_record.get('fullness', {}), **fullness_data}
         if hunger_data:
             updated_data['hunger'] = hunger_data
         
         updated_record = update_record(existing_record['id'], updated_data)
         if updated_record:
-            updated_record['feedback'] = generate_feedback(
-                updated_record.get('weight') or 70,
-                updated_record.get('food', ''),
-                updated_record.get('exercise', False),
-                updated_record.get('exercise_info'),
-                updated_record.get('fullness', {}),
-                updated_record.get('hunger', {})
-            )
+            updated_record['feedback'] = generate_feedback(updated_record)
             update_record(existing_record['id'], {'feedback': updated_record['feedback']})
             return jsonify(updated_record), 200
         return jsonify({'error': '更新失败'}), 500
@@ -279,12 +281,17 @@ def add_record():
         'id': len(get_records()) + 1,
         'date': record_date + ' ' + datetime.now().strftime('%H:%M:%S'),
         'weight': weight,
-        'food': food,
+        'food': food_data,
         'exercise': exercise,
         'exercise_info': exercise_info,
-        'fullness': fullness_data,
         'hunger': hunger_data,
-        'feedback': generate_feedback(weight or 70, food, exercise, exercise_info, fullness_data, hunger_data) if (weight or food or exercise) else ''
+        'feedback': generate_feedback({
+            'weight': weight,
+            'food': food_data,
+            'exercise': exercise,
+            'exercise_info': exercise_info,
+            'hunger': hunger_data
+        }) if (weight or food_data or exercise) else ''
     }
     
     save_record(record)
@@ -309,8 +316,8 @@ def delete_record(record_id):
     records = get_records()
     records = [r for r in records if r['id'] != record_id]
     
-    with open(DATA_FILE, 'w') as f:
-        json.dump(records, f, indent=2)
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(records, f, indent=2, ensure_ascii=False)
     
     return jsonify({'message': '记录已删除'}), 200
 

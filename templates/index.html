@@ -341,10 +341,8 @@
             var date = document.getElementById('recordDate').value;
             var weight = document.getElementById('weight').value || null;
             var foodInput = document.getElementById(meal + '-food');
-            var food = foodInput.value || '-';
-            
-            var mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' };
-            var mealFood = mealNames[meal] + ': ' + food;
+            var description = foodInput.value || '-';
+            var fullness = fullnessData[meal];
             
             var exercise = document.querySelector('input[name="exercise"]:checked').value === 'true';
             var exercise_info = exercise ? { name: selectedExercise, duration: selectedDuration } : null;
@@ -355,10 +353,15 @@
                 body: JSON.stringify({
                     date: date,
                     weight: weight,
-                    food: mealFood,
+                    food: {
+                        [meal]: {
+                            fullness: fullness,
+                            description: description,
+                            recorded: true
+                        }
+                    },
                     exercise: exercise,
                     exercise_info: exercise_info,
-                    fullness: { [meal]: fullnessData[meal] },
                     hunger: hungerData
                 })
             });
@@ -396,7 +399,6 @@
             var breakfastFood = document.getElementById('breakfast-food').value || '-';
             var lunchFood = document.getElementById('lunch-food').value || '-';
             var dinnerFood = document.getElementById('dinner-food').value || '-';
-            var food = '早餐: ' + breakfastFood + ' | 午餐: ' + lunchFood + ' | 晚餐: ' + dinnerFood;
             
             var exercise = document.querySelector('input[name="exercise"]:checked').value === 'true';
             var exercise_info = exercise ? { name: selectedExercise, duration: selectedDuration } : null;
@@ -407,10 +409,25 @@
                 body: JSON.stringify({
                     date: date,
                     weight: weight,
-                    food: food,
+                    food: {
+                        breakfast: {
+                            fullness: fullnessData.breakfast,
+                            description: breakfastFood,
+                            recorded: breakfastFood !== '-'
+                        },
+                        lunch: {
+                            fullness: fullnessData.lunch,
+                            description: lunchFood,
+                            recorded: lunchFood !== '-'
+                        },
+                        dinner: {
+                            fullness: fullnessData.dinner,
+                            description: dinnerFood,
+                            recorded: dinnerFood !== '-'
+                        }
+                    },
                     exercise: exercise,
                     exercise_info: exercise_info,
-                    fullness: fullnessData,
                     hunger: hungerData
                 })
             });
@@ -446,19 +463,31 @@
                     document.getElementById('weight').value = record.weight;
                 }
                 
-                if (record.fullness) {
-                    fullnessData = record.fullness;
-                    Object.keys(record.fullness).forEach(function(meal) {
+                if (record.food) {
+                    var foodData = record.food;
+                    
+                    ['breakfast', 'lunch', 'dinner'].forEach(function(meal) {
+                        var mealData = foodData[meal] || {};
+                        var recorded = mealData.recorded || false;
+                        var fullness = mealData.fullness || 7;
+                        var description = mealData.description || '';
+                        
+                        mealCompleted[meal] = recorded;
+                        
                         var select = document.getElementById(meal + '-fullness');
                         if (select) {
-                            select.value = record.fullness[meal];
+                            select.value = fullness;
+                        }
+                        
+                        var foodInput = document.getElementById(meal + '-food');
+                        if (foodInput) {
+                            foodInput.value = description;
                         }
                     });
                 }
                 
                 if (record.hunger && record.hunger.times !== undefined) {
                     hungerData.times = record.hunger.times;
-                    // 先移除所有饥饿感按钮的active类
                     document.querySelectorAll('.hunger-btn').forEach(function(b) {
                         b.classList.remove('active');
                     });
@@ -466,22 +495,6 @@
                     if (hungerBtn) {
                         hungerBtn.classList.add('active');
                     }
-                }
-                
-                if (record.food) {
-                    var parts = record.food.split(' | ');
-                    parts.forEach(function(part) {
-                        if (part.startsWith('早餐: ')) {
-                            mealCompleted.breakfast = true;
-                            document.getElementById('breakfast-food').value = part.slice(4);
-                        } else if (part.startsWith('午餐: ')) {
-                            mealCompleted.lunch = true;
-                            document.getElementById('lunch-food').value = part.slice(4);
-                        } else if (part.startsWith('晚餐: ')) {
-                            mealCompleted.dinner = true;
-                            document.getElementById('dinner-food').value = part.slice(4);
-                        }
-                    });
                 }
                 
                 if (record.exercise !== undefined) {
@@ -500,6 +513,10 @@
                     if (record.exercise_info) {
                         selectedExercise = record.exercise_info.name;
                         selectedDuration = record.exercise_info.duration;
+                        // 先移除所有运动类型按钮的active类
+                        document.querySelectorAll('.exercise-type-btn').forEach(function(b) {
+                            b.classList.remove('active');
+                        });
                         var exerciseBtn = document.querySelector('.exercise-type-btn[data-exercise="' + record.exercise_info.name + '"]');
                         if (exerciseBtn) {
                             exerciseBtn.classList.add('active');
@@ -525,9 +542,25 @@
             
             historyList.innerHTML = records.map(function(record) {
                 var fullnessInfo = '';
-                if (record.fullness) {
+                if (record.food) {
                     var hungerTimes = record.hunger && record.hunger.times !== undefined ? record.hunger.times : 0;
-                    fullnessInfo = '<div class="history-fullness"><span>🌅 ' + (record.fullness.breakfast || 0) + '分</span><span>☀️ ' + (record.fullness.lunch || 0) + '分</span><span>🌙 ' + (record.fullness.dinner || 0) + '分</span><span>😋 ' + hungerTimes + '次饿</span></div>';
+                    var bf = record.food.breakfast || {};
+                    var lu = record.food.lunch || {};
+                    var dn = record.food.dinner || {};
+                    fullnessInfo = '<div class="history-fullness"><span>🌅 ' + (bf.fullness || 0) + '分</span><span>☀️ ' + (lu.fullness || 0) + '分</span><span>🌙 ' + (dn.fullness || 0) + '分</span><span>😋 ' + hungerTimes + '次饿</span></div>';
+                }
+                
+                var foodDescriptions = [];
+                if (record.food) {
+                    if (record.food.breakfast && record.food.breakfast.recorded) {
+                        foodDescriptions.push('早餐: ' + record.food.breakfast.description);
+                    }
+                    if (record.food.lunch && record.food.lunch.recorded) {
+                        foodDescriptions.push('午餐: ' + record.food.lunch.description);
+                    }
+                    if (record.food.dinner && record.food.dinner.recorded) {
+                        foodDescriptions.push('晚餐: ' + record.food.dinner.description);
+                    }
                 }
                 
                 var exerciseInfo = '';
@@ -535,7 +568,7 @@
                     exerciseInfo = '<span class="exercise-info">' + record.exercise_info.name + ' ' + record.exercise_info.duration + '分钟</span>';
                 }
                 
-                return '<div class="history-item"><div class="history-header"><div class="history-date">' + record.date + '</div><button class="delete-btn" onclick="deleteRecord(' + record.id + ')">删除</button></div><div class="history-content"><span class="weight-badge">' + record.weight + ' kg</span><span class="exercise-badge">' + (record.exercise ? '🏃 运动' : '💤 休息') + '</span>' + exerciseInfo + '</div>' + fullnessInfo + (record.food && record.food !== '未记录' ? '<div class="history-food">🍽️ ' + record.food + '</div>' : '') + '<div class="history-feedback">' + record.feedback + '</div></div>';
+                return '<div class="history-item"><div class="history-header"><div class="history-date">' + record.date + '</div><button class="delete-btn" onclick="deleteRecord(' + record.id + ')">删除</button></div><div class="history-content"><span class="weight-badge">' + record.weight + ' kg</span><span class="exercise-badge">' + (record.exercise ? '🏃 运动' : '💤 休息') + '</span>' + exerciseInfo + '</div>' + fullnessInfo + (foodDescriptions.length > 0 ? '<div class="history-food">🍽️ ' + foodDescriptions.join(' | ') + '</div>' : '') + '<div class="history-feedback">' + record.feedback + '</div></div>';
             }).join('');
         }
         
