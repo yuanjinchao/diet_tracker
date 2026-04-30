@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#5B8FF9">
+    <title>减肥打卡</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏃 减肥打卡</h1>
+            <p class="subtitle">坚持每一天，遇见更好的自己</p>
+        </div>
+        
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">打卡天数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statWeight">--</div>
+                <div class="stat-label">当前体重(kg)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statChange">--</div>
+                <div class="stat-label">累计变化(kg)</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📅 打卡记录</h2>
+                <div class="date-selector">
+                    <input type="date" id="recordDate" class="date-input">
+                </div>
+            </div>
+            
+            <div class="progress-section">
+                <div class="progress-header">
+                    <span>今日进度</span>
+                    <span id="progressText">0/3</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="meal-status">
+                    <span class="meal-status-item" id="statusBreakfast">🌅 早餐</span>
+                    <span class="meal-status-item" id="statusLunch">☀️ 午餐</span>
+                    <span class="meal-status-item" id="statusDinner">🌙 晚餐</span>
+                </div>
+            </div>
+            
+            <form id="recordForm">
+                <div class="form-group">
+                    <label for="weight">⚖️ 体重 (kg)</label>
+                    <input type="number" id="weight" class="form-control" step="0.1" placeholder="请输入体重">
+                    <small class="form-hint">可随时更新体重</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>🍚 早餐</label>
+                    <div class="meal-section">
+                        <div class="meal-row">
+                            <div class="meal-label">🌅 饱腹感</div>
+                            <select id="breakfast-fullness" class="fullness-select">
+                                <option value="1">1分 - 很饿</option>
+                                <option value="2">2分</option>
+                                <option value="3">3分</option>
+                                <option value="4">4分</option>
+                                <option value="5">5分 - 适中</option>
+                                <option value="6">6分</option>
+                                <option value="7" selected>7分 - 七分饱</option>
+                                <option value="8">8分</option>
+                                <option value="9">9分</option>
+                                <option value="10">10分 - 很饱</option>
+                            </select>
+                        </div>
+                        <input type="text" id="breakfast-food" class="form-control meal-food-input" placeholder="早餐吃了什么...">
+                        <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('breakfast')">
+                            ✓ 完成早餐
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>🍛 午餐</label>
+                    <div class="meal-section">
+                        <div class="meal-row">
+                            <div class="meal-label">☀️ 饱腹感</div>
+                            <select id="lunch-fullness" class="fullness-select">
+                                <option value="1">1分 - 很饿</option>
+                                <option value="2">2分</option>
+                                <option value="3">3分</option>
+                                <option value="4">4分</option>
+                                <option value="5">5分 - 适中</option>
+                                <option value="6">6分</option>
+                                <option value="7" selected>7分 - 七分饱</option>
+                                <option value="8">8分</option>
+                                <option value="9">9分</option>
+                                <option value="10">10分 - 很饱</option>
+                            </select>
+                        </div>
+                        <input type="text" id="lunch-food" class="form-control meal-food-input" placeholder="午餐吃了什么...">
+                        <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('lunch')">
+                            ✓ 完成午餐
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>🍲 晚餐</label>
+                    <div class="meal-section">
+                        <div class="meal-row">
+                            <div class="meal-label">🌙 饱腹感</div>
+                            <select id="dinner-fullness" class="fullness-select">
+                                <option value="1">1分 - 很饿</option>
+                                <option value="2">2分</option>
+                                <option value="3">3分</option>
+                                <option value="4">4分</option>
+                                <option value="5">5分 - 适中</option>
+                                <option value="6">6分</option>
+                                <option value="7" selected>7分 - 七分饱</option>
+                                <option value="8">8分</option>
+                                <option value="9">9分</option>
+                                <option value="10">10分 - 很饱</option>
+                            </select>
+                        </div>
+                        <input type="text" id="dinner-food" class="form-control meal-food-input" placeholder="晚餐吃了什么...">
+                        <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('dinner')">
+                            ✓ 完成晚餐
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>😋 今日饥饿感</label>
+                    <div class="hunger-selector">
+                        <button type="button" class="hunger-btn active" data-value="0">0次</button>
+                        <button type="button" class="hunger-btn" data-value="1">1次</button>
+                        <button type="button" class="hunger-btn" data-value="2">2次</button>
+                        <button type="button" class="hunger-btn" data-value="3">3次</button>
+                        <button type="button" class="hunger-btn" data-value="4">4次+</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>🏃 今日运动</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="exercise" value="true">
+                            <span>有运动</span>
+                        </label>
+                        <label class="radio-option active">
+                            <input type="radio" name="exercise" value="false" checked>
+                            <span>没运动</span>
+                        </label>
+                    </div>
+                    <div id="exerciseDetails" class="exercise-details">
+                        <div class="exercise-types">
+                            <button type="button" class="exercise-type-btn active" data-exercise="跑步">🏃 跑步</button>
+                            <button type="button" class="exercise-type-btn" data-exercise="慢跑">🏃 慢跑</button>
+                            <button type="button" class="exercise-type-btn" data-exercise="快走">🚶 快走</button>
+                            <button type="button" class="exercise-type-btn" data-exercise="游泳">🏊 游泳</button>
+                            <button type="button" class="exercise-type-btn" data-exercise="骑行">🚴 骑行</button>
+                            <button type="button" class="exercise-type-btn" data-exercise="健身">💪 健身</button>
+                            <button type="button" class="exercise-type-btn" data-exercise="瑜伽">🧘 瑜伽</button>
+                            <button type="button" class="exercise-type-btn" data-exercise="跳绳">🪢 跳绳</button>
+                        </div>
+                        <div class="exercise-duration">
+                            <label>运动时长：</label>
+                            <select id="exerciseDuration" class="duration-select">
+                                <option value="15">15 分钟</option>
+                                <option value="30" selected>30 分钟</option>
+                                <option value="45">45 分钟</option>
+                                <option value="60">60 分钟</option>
+                                <option value="90">90 分钟</option>
+                                <option value="120">120 分钟</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn btn-primary full-submit-btn" onclick="submitFullDay()">
+                    🎯 完成全天打卡
+                </button>
+                
+                <div id="feedback" class="feedback"></div>
+            </form>
+        </div>
+        
+        <div class="card chart-card">
+            <h2 class="card-title">📈 体重趋势</h2>
+            <div class="chart-container">
+                <canvas id="weightChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title">📝 历史记录</h2>
+            <div id="historyList" class="history-list">
+                <div class="empty-state">
+                    <div class="icon">📝</div>
+                    <p>还没有打卡记录，开始你的第一天吧！</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        var fullnessData = { breakfast: 7, lunch: 7, dinner: 7 };
+        var mealCompleted = { breakfast: false, lunch: false, dinner: false };
+        var hungerData = { times: 0 };
+        var selectedExercise = '跑步';
+        var selectedDuration = 30;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            var today = new Date().toISOString().split('T')[0];
+            document.getElementById('recordDate').value = today;
+            
+            loadRecords();
+            loadTrend();
+            updateStats();
+            initEventListeners();
+            loadTodayRecord();
+        });
+        
+        function initEventListeners() {
+            document.querySelectorAll('.fullness-select').forEach(function(select) {
+                select.addEventListener('change', function() {
+                    var meal = select.id.replace('-fullness', '');
+                    fullnessData[meal] = parseInt(select.value);
+                });
+            });
+            
+            document.querySelectorAll('.hunger-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.hunger-btn').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                    hungerData.times = parseInt(btn.dataset.value);
+                });
+            });
+            
+            document.querySelectorAll('.exercise-type-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.exercise-type-btn').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                    selectedExercise = btn.dataset.exercise;
+                });
+            });
+            
+            document.getElementById('exerciseDuration').addEventListener('change', function(e) {
+                selectedDuration = parseInt(e.target.value);
+            });
+            
+            var exerciseRadios = document.querySelectorAll('input[name="exercise"]');
+            var exerciseDetails = document.getElementById('exerciseDetails');
+            
+            exerciseRadios.forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    if (radio.value === 'true' && radio.checked) {
+                        exerciseDetails.style.display = 'block';
+                    } else {
+                        exerciseDetails.style.display = 'none';
+                    }
+                });
+            });
+            
+            if (document.querySelector('input[name="exercise"]:checked').value === 'false') {
+                exerciseDetails.style.display = 'none';
+            }
+            
+            var radioOptions = document.querySelectorAll('.radio-option');
+            radioOptions.forEach(function(option) {
+                option.addEventListener('click', function() {
+                    var radio = option.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change'));
+                    }
+                    radioOptions.forEach(function(o) {
+                        o.classList.remove('active');
+                    });
+                    option.classList.add('active');
+                });
+            });
+            
+            document.getElementById('recordDate').addEventListener('change', function() {
+                // 重置状态
+                mealCompleted = { breakfast: false, lunch: false, dinner: false };
+                
+                // 清空餐食输入
+                document.getElementById('breakfast-food').value = '';
+                document.getElementById('lunch-food').value = '';
+                document.getElementById('dinner-food').value = '';
+                
+                // 初始化饱腹感为默认值（7分）
+                document.getElementById('breakfast-fullness').value = '7';
+                document.getElementById('lunch-fullness').value = '7';
+                document.getElementById('dinner-fullness').value = '7';
+                fullnessData = { breakfast: 7, lunch: 7, dinner: 7 };
+                
+                // 初始化饥饿感为0次
+                hungerData.times = 0;
+                document.querySelectorAll('.hunger-btn').forEach(function(b) {
+                    b.classList.remove('active');
+                });
+                document.querySelector('.hunger-btn[data-value="0"]').classList.add('active');
+                
+                // 加载新日期的记录
+                loadTodayRecord();
+            });
+        }
+        
+        function updateProgress() {
+            var completed = 0;
+            if (mealCompleted.breakfast) completed++;
+            if (mealCompleted.lunch) completed++;
+            if (mealCompleted.dinner) completed++;
+            
+            document.getElementById('progressText').textContent = completed + '/3';
+            document.getElementById('progressFill').style.width = (completed / 3 * 100) + '%';
+            
+            ['breakfast', 'lunch', 'dinner'].forEach(function(meal) {
+                var mealName = meal.charAt(0).toUpperCase() + meal.slice(1);
+                var statusEl = document.getElementById('status' + mealName);
+                if (mealCompleted[meal]) {
+                    statusEl.classList.add('completed');
+                } else {
+                    statusEl.classList.remove('completed');
+                }
+            });
+        }
+        
+        async function submitMeal(meal) {
+            var date = document.getElementById('recordDate').value;
+            var weight = document.getElementById('weight').value || null;
+            var foodInput = document.getElementById(meal + '-food');
+            var food = foodInput.value || '-';
+            
+            var mealNames = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐' };
+            var mealFood = mealNames[meal] + ': ' + food;
+            
+            var exercise = document.querySelector('input[name="exercise"]:checked').value === 'true';
+            var exercise_info = exercise ? { name: selectedExercise, duration: selectedDuration } : null;
+            
+            var response = await fetch('/api/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: date,
+                    weight: weight,
+                    food: mealFood,
+                    exercise: exercise,
+                    exercise_info: exercise_info,
+                    fullness: { [meal]: fullnessData[meal] },
+                    hunger: hungerData
+                })
+            });
+            
+            var record = await response.json();
+            
+            mealCompleted[meal] = true;
+            updateProgress();
+            
+            var feedback = document.getElementById('feedback');
+            var mealText = meal === 'breakfast' ? '早餐' : (meal === 'lunch' ? '午餐' : '晚餐');
+            feedback.textContent = '✅ ' + mealText + '记录成功！';
+            feedback.classList.remove('success', 'warning');
+            feedback.classList.add('success');
+            feedback.style.display = 'block';
+            
+            setTimeout(function() {
+                feedback.style.display = 'none';
+            }, 3000);
+            
+            loadRecords();
+            loadTrend();
+            updateStats();
+        }
+        
+        async function submitFullDay() {
+            var date = document.getElementById('recordDate').value;
+            var weight = document.getElementById('weight').value;
+            
+            if (!weight) {
+                alert('请先输入体重');
+                return;
+            }
+            
+            var breakfastFood = document.getElementById('breakfast-food').value || '-';
+            var lunchFood = document.getElementById('lunch-food').value || '-';
+            var dinnerFood = document.getElementById('dinner-food').value || '-';
+            var food = '早餐: ' + breakfastFood + ' | 午餐: ' + lunchFood + ' | 晚餐: ' + dinnerFood;
+            
+            var exercise = document.querySelector('input[name="exercise"]:checked').value === 'true';
+            var exercise_info = exercise ? { name: selectedExercise, duration: selectedDuration } : null;
+            
+            var response = await fetch('/api/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: date,
+                    weight: weight,
+                    food: food,
+                    exercise: exercise,
+                    exercise_info: exercise_info,
+                    fullness: fullnessData,
+                    hunger: hungerData
+                })
+            });
+            
+            var record = await response.json();
+            
+            mealCompleted = { breakfast: true, lunch: true, dinner: true };
+            updateProgress();
+            
+            var feedback = document.getElementById('feedback');
+            feedback.textContent = record.feedback || '🎉 全天打卡完成！';
+            feedback.classList.remove('success', 'warning');
+            var hasHighCalorie = record.feedback && record.feedback.includes('高热量');
+            feedback.classList.add(record.exercise && !hasHighCalorie ? 'success' : 'warning');
+            feedback.style.display = 'block';
+            
+            setTimeout(function() {
+                feedback.style.display = 'none';
+            }, 8000);
+            
+            loadRecords();
+            loadTrend();
+            updateStats();
+        }
+        
+        async function loadTodayRecord() {
+            var date = document.getElementById('recordDate').value;
+            var response = await fetch('/api/records/date/' + date);
+            var record = await response.json();
+            
+            if (record) {
+                if (record.weight) {
+                    document.getElementById('weight').value = record.weight;
+                }
+                
+                if (record.fullness) {
+                    fullnessData = record.fullness;
+                    Object.keys(record.fullness).forEach(function(meal) {
+                        var select = document.getElementById(meal + '-fullness');
+                        if (select) {
+                            select.value = record.fullness[meal];
+                        }
+                    });
+                }
+                
+                if (record.hunger && record.hunger.times !== undefined) {
+                    hungerData.times = record.hunger.times;
+                    // 先移除所有饥饿感按钮的active类
+                    document.querySelectorAll('.hunger-btn').forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    var hungerBtn = document.querySelector('.hunger-btn[data-value="' + record.hunger.times + '"]');
+                    if (hungerBtn) {
+                        hungerBtn.classList.add('active');
+                    }
+                }
+                
+                if (record.food) {
+                    var parts = record.food.split(' | ');
+                    parts.forEach(function(part) {
+                        if (part.startsWith('早餐: ')) {
+                            mealCompleted.breakfast = true;
+                            document.getElementById('breakfast-food').value = part.slice(4);
+                        } else if (part.startsWith('午餐: ')) {
+                            mealCompleted.lunch = true;
+                            document.getElementById('lunch-food').value = part.slice(4);
+                        } else if (part.startsWith('晚餐: ')) {
+                            mealCompleted.dinner = true;
+                            document.getElementById('dinner-food').value = part.slice(4);
+                        }
+                    });
+                }
+                
+                if (record.exercise !== undefined) {
+                    var radio = document.querySelector('input[name="exercise"][value="' + record.exercise + '"]');
+                    if (radio) {
+                        radio.checked = true;
+                    }
+                    var radioOptions = document.querySelectorAll('.radio-option');
+                    radioOptions.forEach(function(o) {
+                        o.classList.toggle('active', o.querySelector('input').checked);
+                    });
+                    
+                    var exerciseDetails = document.getElementById('exerciseDetails');
+                    exerciseDetails.style.display = record.exercise ? 'block' : 'none';
+                    
+                    if (record.exercise_info) {
+                        selectedExercise = record.exercise_info.name;
+                        selectedDuration = record.exercise_info.duration;
+                        var exerciseBtn = document.querySelector('.exercise-type-btn[data-exercise="' + record.exercise_info.name + '"]');
+                        if (exerciseBtn) {
+                            exerciseBtn.classList.add('active');
+                        }
+                        document.getElementById('exerciseDuration').value = record.exercise_info.duration;
+                    }
+                }
+            }
+            
+            updateProgress();
+        }
+        
+        async function loadRecords() {
+            var response = await fetch('/api/records');
+            var records = await response.json();
+            
+            var historyList = document.getElementById('historyList');
+            
+            if (records.length === 0) {
+                historyList.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>还没有打卡记录，开始你的第一天吧！</p></div>';
+                return;
+            }
+            
+            historyList.innerHTML = records.map(function(record) {
+                var fullnessInfo = '';
+                if (record.fullness) {
+                    var hungerTimes = record.hunger && record.hunger.times !== undefined ? record.hunger.times : 0;
+                    fullnessInfo = '<div class="history-fullness"><span>🌅 ' + (record.fullness.breakfast || 0) + '分</span><span>☀️ ' + (record.fullness.lunch || 0) + '分</span><span>🌙 ' + (record.fullness.dinner || 0) + '分</span><span>😋 ' + hungerTimes + '次饿</span></div>';
+                }
+                
+                var exerciseInfo = '';
+                if (record.exercise && record.exercise_info) {
+                    exerciseInfo = '<span class="exercise-info">' + record.exercise_info.name + ' ' + record.exercise_info.duration + '分钟</span>';
+                }
+                
+                return '<div class="history-item"><div class="history-header"><div class="history-date">' + record.date + '</div><button class="delete-btn" onclick="deleteRecord(' + record.id + ')">删除</button></div><div class="history-content"><span class="weight-badge">' + record.weight + ' kg</span><span class="exercise-badge">' + (record.exercise ? '🏃 运动' : '💤 休息') + '</span>' + exerciseInfo + '</div>' + fullnessInfo + (record.food && record.food !== '未记录' ? '<div class="history-food">🍽️ ' + record.food + '</div>' : '') + '<div class="history-feedback">' + record.feedback + '</div></div>';
+            }).join('');
+        }
+        
+        async function deleteRecord(recordId) {
+            if (!confirm('确定要删除这条记录吗？')) {
+                return;
+            }
+            
+            var response = await fetch('/api/records/' + recordId, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                loadRecords();
+                loadTrend();
+                updateStats();
+            }
+        }
+        
+        async function loadTrend() {
+            var response = await fetch('/api/weight-trend');
+            var trend = await response.json();
+            
+            var canvas = document.getElementById('weightChart');
+            var ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            var width = canvas.offsetWidth;
+            var height = canvas.offsetHeight;
+            var padding = { top: 20, right: 15, bottom: 35, left: 40 };
+            var chartWidth = width - padding.left - padding.right;
+            var chartHeight = height - padding.top - padding.bottom;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            if (trend.length === 0) {
+                ctx.fillStyle = '#8F959E';
+                ctx.font = '13px -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', width / 2, height / 2);
+                return;
+            }
+            
+            ctx.strokeStyle = '#E5E6EB';
+            ctx.lineWidth = 1;
+            for (var i = 0; i <= 4; i++) {
+                var y = padding.top + (chartHeight / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+            
+            var weights = trend.map(function(t) { return t.weight; });
+            var minWeight = Math.min.apply(Math, weights) - 1;
+            var maxWeight = Math.max.apply(Math, weights) + 1;
+            
+            ctx.fillStyle = '#8F959E';
+            ctx.font = '11px -apple-system, sans-serif';
+            ctx.textAlign = 'right';
+            for (var i = 0; i <= 4; i++) {
+                var weight = maxWeight - ((maxWeight - minWeight) / 4) * i;
+                var y = padding.top + (chartHeight / 4) * i;
+                ctx.fillText(weight.toFixed(0), padding.left - 8, y + 3);
+            }
+            
+            ctx.textAlign = 'center';
+            var step = Math.max(1, Math.floor(trend.length / 5));
+            trend.forEach(function(t, i) {
+                if (i % step === 0 || i === trend.length - 1) {
+                    var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                    ctx.fillText(t.date.slice(5), x, height - 12);
+                }
+            });
+            
+            ctx.strokeStyle = '#5B8FF9';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            
+            trend.forEach(function(t, i) {
+                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                var y = padding.top + chartHeight - ((t.weight - minWeight) / (maxWeight - minWeight)) * chartHeight;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            
+            ctx.fillStyle = '#5B8FF9';
+            trend.forEach(function(t, i) {
+                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                var y = padding.top + chartHeight - ((t.weight - minWeight) / (maxWeight - minWeight)) * chartHeight;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#5B8FF9';
+            });
+            
+            if (trend.length > 1) {
+                var lastWeight = trend[trend.length - 1].weight;
+                var firstWeight = trend[0].weight;
+                var change = (lastWeight - firstWeight).toFixed(1);
+                
+                ctx.fillStyle = change < 0 ? '#52C41A' : '#FF4D4F';
+                ctx.font = 'bold 12px -apple-system, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText((change < 0 ? '↓ ' + Math.abs(change) : '↑ ' + change) + 'kg', padding.left, 15);
+            }
+        }
+        
+        async function updateStats() {
+            var response = await fetch('/api/records');
+            var records = await response.json();
+            
+            document.getElementById('statTotal').textContent = records.length;
+            
+            if (records.length > 0) {
+                var sortedRecords = records.slice().sort(function(a, b) {
+                    return new Date(b.date) - new Date(a.date);
+                });
+                var latestWeight = sortedRecords[0].weight;
+                document.getElementById('statWeight').textContent = latestWeight;
+                
+                var earliestWeight = sortedRecords[sortedRecords.length - 1].weight;
+                var change = (latestWeight - earliestWeight).toFixed(1);
+                document.getElementById('statChange').textContent = change;
+            } else {
+                document.getElementById('statWeight').textContent = '--';
+                document.getElementById('statChange').textContent = '--';
+            }
+        }
+        
+        window.addEventListener('resize', function() {
+            loadTrend();
+        });
+    </script>
+</body>
+</html>

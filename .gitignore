@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Flask
+instance/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data
+data/records.json
+
+# Environment
+.env
+venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
