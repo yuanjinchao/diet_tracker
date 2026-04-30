@@ -607,6 +607,43 @@ textarea.form-control {
     background: #E5E6EB;
 }
 
+.meal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.meal-submit-btn {
+    flex: 2;
+    background: var(--success-color);
+    color: white;
+    padding: 8px 12px;
+    font-size: 13px;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+.meal-submit-btn:hover {
+    background: #3CB371;
+}
+
+.btn-cancel {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 12px;
+    background: linear-gradient(135deg, #FFF5F5 0%, #FFE0E0 100%);
+    color: #E53935;
+    border: 1px solid #FFCDD2;
+    transition: all 0.2s;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+.btn-cancel:hover {
+    background: #FFE0E0;
+    border-color: #EF9A9A;
+}
+
 .full-submit-btn {
     margin-top: 8px;
 }

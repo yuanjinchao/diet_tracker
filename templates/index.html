@@ -81,9 +81,14 @@
                             </select>
                         </div>
                         <input type="text" id="breakfast-food" class="form-control meal-food-input" placeholder="早餐吃了什么...">
-                        <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('breakfast')">
-                            ✓ 完成早餐
-                        </button>
+                        <div class="meal-actions">
+                            <button type="button" class="btn btn-cancel" id="btn-cancel-breakfast" style="display: none;" onclick="cancelMeal('breakfast')">
+                                ✕ 取消
+                            </button>
+                            <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('breakfast')">
+                                ✓ 完成早餐
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -106,9 +111,14 @@
                             </select>
                         </div>
                         <input type="text" id="lunch-food" class="form-control meal-food-input" placeholder="午餐吃了什么...">
-                        <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('lunch')">
-                            ✓ 完成午餐
-                        </button>
+                        <div class="meal-actions">
+                            <button type="button" class="btn btn-cancel" id="btn-cancel-lunch" style="display: none;" onclick="cancelMeal('lunch')">
+                                ✕ 取消
+                            </button>
+                            <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('lunch')">
+                                ✓ 完成午餐
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -131,9 +141,14 @@
                             </select>
                         </div>
                         <input type="text" id="dinner-food" class="form-control meal-food-input" placeholder="晚餐吃了什么...">
-                        <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('dinner')">
-                            ✓ 完成晚餐
-                        </button>
+                        <div class="meal-actions">
+                            <button type="button" class="btn btn-cancel" id="btn-cancel-dinner" style="display: none;" onclick="cancelMeal('dinner')">
+                                ✕ 取消
+                            </button>
+                            <button type="button" class="btn btn-secondary meal-submit-btn" onclick="submitMeal('dinner')">
+                                ✓ 完成晚餐
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -390,11 +405,63 @@
             mealCompleted[meal] = true;
             updateProgress();
             
+            var cancelBtn = document.getElementById('btn-cancel-' + meal);
+            if (cancelBtn) cancelBtn.style.display = 'block';
+            
             var feedback = document.getElementById('feedback');
             var mealText = meal === 'breakfast' ? '早餐' : (meal === 'lunch' ? '午餐' : '晚餐');
             feedback.textContent = '✅ ' + mealText + '记录成功！';
             feedback.classList.remove('success', 'warning');
             feedback.classList.add('success');
+            feedback.style.display = 'block';
+            
+            setTimeout(function() {
+                feedback.style.display = 'none';
+            }, 3000);
+            
+            loadRecords();
+            loadTrend();
+            loadFullnessTrend();
+            loadHungerTrend();
+            updateStats();
+        }
+        
+        async function cancelMeal(meal) {
+            var date = document.getElementById('recordDate').value;
+            
+            var response = await fetch('/api/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: date,
+                    food: {
+                        [meal]: {
+                            fullness: 0,
+                            description: '',
+                            recorded: false
+                        }
+                    }
+                })
+            });
+            
+            await response.json();
+            
+            mealCompleted[meal] = false;
+            updateProgress();
+            
+            var foodInput = document.getElementById(meal + '-food');
+            var fullnessSelect = document.getElementById(meal + '-fullness');
+            var cancelBtn = document.getElementById('btn-cancel-' + meal);
+            
+            if (foodInput) foodInput.value = '';
+            if (fullnessSelect) fullnessSelect.value = '7';
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            
+            var feedback = document.getElementById('feedback');
+            var mealText = meal === 'breakfast' ? '早餐' : (meal === 'lunch' ? '午餐' : '晚餐');
+            feedback.textContent = '✕ ' + mealText + '已取消！';
+            feedback.classList.remove('success', 'warning');
+            feedback.classList.add('warning');
             feedback.style.display = 'block';
             
             setTimeout(function() {
@@ -505,6 +572,11 @@
                         var foodInput = document.getElementById(meal + '-food');
                         if (foodInput) {
                             foodInput.value = description;
+                        }
+                        
+                        var cancelBtn = document.getElementById('btn-cancel-' + meal);
+                        if (cancelBtn) {
+                            cancelBtn.style.display = recorded ? 'block' : 'none';
                         }
                     });
                 }
