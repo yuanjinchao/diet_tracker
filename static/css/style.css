@@ -230,9 +230,32 @@ textarea.form-control {
     height: 200px;
 }
 
-#weightChart {
+#weightChart, #fullnessChart {
     width: 100% !important;
     height: 100% !important;
+}
+
+.chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #666;
+}
+
+.legend-color {
+    width: 12px;
+    height: 3px;
+    border-radius: 2px;
 }
 
 .history-list {

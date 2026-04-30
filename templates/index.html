@@ -197,6 +197,20 @@
             </div>
         </div>
         
+        <div class="card chart-card">
+            <h2 class="card-title">🥗 每日饱腹感趋势</h2>
+            <div class="chart-container">
+                <canvas id="fullnessChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card chart-card">
+            <h2 class="card-title">😋 每日饥饿感趋势</h2>
+            <div class="chart-container">
+                <canvas id="hungerChart"></canvas>
+            </div>
+        </div>
+        
         <div class="card">
             <h2 class="card-title">📝 历史记录</h2>
             <div id="historyList" class="history-list">
@@ -221,6 +235,8 @@
             
             loadRecords();
             loadTrend();
+            loadFullnessTrend();
+            loadHungerTrend();
             updateStats();
             initEventListeners();
             loadTodayRecord();
@@ -384,6 +400,8 @@
             
             loadRecords();
             loadTrend();
+            loadFullnessTrend();
+            loadHungerTrend();
             updateStats();
         }
         
@@ -450,6 +468,8 @@
             
             loadRecords();
             loadTrend();
+            loadFullnessTrend();
+            loadHungerTrend();
             updateStats();
         }
         
@@ -691,6 +711,225 @@
             }
         }
         
+        async function loadFullnessTrend() {
+            var response = await fetch('/api/records');
+            var records = await response.json();
+            
+            records.sort(function(a, b) {
+                return new Date(a.date) - new Date(b.date);
+            });
+            
+            var trend = records.map(function(r) {
+                var food = r.food || {};
+                var fullnessValues = [];
+                
+                ['breakfast', 'lunch', 'dinner'].forEach(function(meal) {
+                    var mealData = food[meal] || {};
+                    if (mealData.recorded && mealData.fullness > 0) {
+                        fullnessValues.push(mealData.fullness);
+                    }
+                });
+                
+                var avgFullness = fullnessValues.length > 0 
+                    ? (fullnessValues.reduce(function(a, b) { return a + b; }, 0) / fullnessValues.length).toFixed(1)
+                    : null;
+                
+                return {
+                    date: r.date,
+                    fullness: avgFullness ? parseFloat(avgFullness) : null
+                };
+            }).filter(function(t) {
+                return t.fullness !== null;
+            });
+            
+            var canvas = document.getElementById('fullnessChart');
+            if (!canvas || trend.length === 0) {
+                return;
+            }
+            
+            var ctx = canvas.getContext('2d');
+            var width = canvas.offsetWidth;
+            var height = 180;
+            canvas.width = width;
+            canvas.height = height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            var padding = { top: 25, right: 20, bottom: 30, left: 45 };
+            var chartWidth = width - padding.left - padding.right;
+            var chartHeight = height - padding.top - padding.bottom;
+            
+            var allFullness = trend.map(function(t) { return t.fullness; });
+            var minFullness = allFullness.length > 0 ? Math.min.apply(Math, allFullness) - 1 : 0;
+            var maxFullness = allFullness.length > 0 ? Math.max.apply(Math, allFullness) + 1 : 10;
+            
+            ctx.fillStyle = '#8F959E';
+            ctx.font = '11px -apple-system, sans-serif';
+            ctx.textAlign = 'right';
+            
+            for (var i = 0; i <= 4; i++) {
+                var value = maxFullness - ((maxFullness - minFullness) / 4) * i;
+                var y = padding.top + (chartHeight / 4) * i;
+                ctx.fillText(value.toFixed(0), padding.left - 8, y + 3);
+            }
+            
+            ctx.textAlign = 'center';
+            var step = Math.max(1, Math.floor(trend.length / 5));
+            trend.forEach(function(t, i) {
+                if (i % step === 0 || i === trend.length - 1) {
+                    var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                    ctx.fillText(t.date.slice(5), x, height - 12);
+                }
+            });
+            
+            ctx.strokeStyle = '#E8E8E8';
+            ctx.lineWidth = 1;
+            for (var i = 0; i <= 4; i++) {
+                var y = padding.top + (chartHeight / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+            
+            ctx.strokeStyle = '#52C41A';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            var started = false;
+            
+            trend.forEach(function(t, i) {
+                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                var y = padding.top + chartHeight - ((t.fullness - minFullness) / (maxFullness - minFullness)) * chartHeight;
+                
+                if (!started) {
+                    ctx.moveTo(x, y);
+                    started = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            
+            ctx.fillStyle = '#52C41A';
+            trend.forEach(function(t, i) {
+                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                var y = padding.top + chartHeight - ((t.fullness - minFullness) / (maxFullness - minFullness)) * chartHeight;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#52C41A';
+            });
+        }
+        
+        async function loadHungerTrend() {
+            var response = await fetch('/api/records');
+            var records = await response.json();
+            
+            records.sort(function(a, b) {
+                return new Date(a.date) - new Date(b.date);
+            });
+            
+            var trend = records.map(function(r) {
+                return {
+                    date: r.date,
+                    hunger: r.hunger && r.hunger.times !== undefined ? r.hunger.times : 0
+                };
+            }).filter(function(t) {
+                return t.hunger >= 0;
+            });
+            
+            var canvas = document.getElementById('hungerChart');
+            if (!canvas || trend.length === 0) {
+                return;
+            }
+            
+            var ctx = canvas.getContext('2d');
+            var width = canvas.offsetWidth;
+            var height = 180;
+            canvas.width = width;
+            canvas.height = height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            var padding = { top: 25, right: 20, bottom: 30, left: 45 };
+            var chartWidth = width - padding.left - padding.right;
+            var chartHeight = height - padding.top - padding.bottom;
+            
+            var allHunger = trend.map(function(t) { return t.hunger; });
+            var maxHunger = allHunger.length > 0 ? Math.max.apply(Math, allHunger) + 1 : 5;
+            
+            ctx.fillStyle = '#8F959E';
+            ctx.font = '11px -apple-system, sans-serif';
+            ctx.textAlign = 'right';
+            
+            for (var i = 0; i <= 4; i++) {
+                var value = maxHunger - (maxHunger / 4) * i;
+                var y = padding.top + (chartHeight / 4) * i;
+                ctx.fillText(value.toFixed(0), padding.left - 8, y + 3);
+            }
+            
+            ctx.textAlign = 'center';
+            var step = Math.max(1, Math.floor(trend.length / 5));
+            trend.forEach(function(t, i) {
+                if (i % step === 0 || i === trend.length - 1) {
+                    var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                    ctx.fillText(t.date.slice(5), x, height - 12);
+                }
+            });
+            
+            ctx.strokeStyle = '#E8E8E8';
+            ctx.lineWidth = 1;
+            for (var i = 0; i <= 4; i++) {
+                var y = padding.top + (chartHeight / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+            
+            ctx.strokeStyle = '#F56565';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            var started = false;
+            
+            trend.forEach(function(t, i) {
+                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                var y = padding.top + chartHeight - (t.hunger / maxHunger) * chartHeight;
+                
+                if (!started) {
+                    ctx.moveTo(x, y);
+                    started = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = '#F56565';
+            trend.forEach(function(t, i) {
+                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
+                var y = padding.top + chartHeight - (t.hunger / maxHunger) * chartHeight;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#FFFFFF';
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#F56565';
+            });
+        }
+        
         async function updateStats() {
             var response = await fetch('/api/records');
             var records = await response.json();
@@ -715,6 +954,8 @@
         
         window.addEventListener('resize', function() {
             loadTrend();
+            loadFullnessTrend();
+            loadHungerTrend();
         });
     </script>
 </body>
