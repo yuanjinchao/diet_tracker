@@ -230,7 +230,7 @@ textarea.form-control {
     height: 200px;
 }
 
-#weightChart, #fullnessChart {
+#weightChart, #fullnessChart, #hungerChart {
     width: 100% !important;
     height: 100% !important;
 }
@@ -687,6 +687,34 @@ textarea.form-control {
     background: linear-gradient(90deg, var(--primary-color) 0%, var(--success-color) 100%);
     border-radius: 3px;
     transition: width 0.3s ease;
+}
+
+.weight-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.weight-input-row label {
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.weight-input {
+    flex: 1;
+    padding-right: 40px;
+}
+
+.weight-unit {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-left: -32px;
+    z-index: 1;
+    position: relative;
 }
 
 .calorie-result {

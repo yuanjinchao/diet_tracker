@@ -37,6 +37,15 @@
                 </div>
             </div>
             
+            <div class="form-group">
+                <div class="weight-input-row">
+                    <label for="weight">⚖️ 体重</label>
+                    <input type="number" id="weight" class="form-control weight-input" step="0.1" placeholder="请输入体重">
+                    <span class="weight-unit">kg</span>
+                </div>
+                <small class="form-hint">可随时更新体重</small>
+            </div>
+            
             <div class="progress-section">
                 <div class="progress-header">
                     <span>今日进度</span>
@@ -53,12 +62,6 @@
             </div>
             
             <form id="recordForm">
-                <div class="form-group">
-                    <label for="weight">⚖️ 体重 (kg)</label>
-                    <input type="number" id="weight" class="form-control" step="0.1" placeholder="请输入体重">
-                    <small class="form-hint">可随时更新体重</small>
-                </div>
-                
                 <div class="form-group">
                     <label>🍚 早餐</label>
                     <div class="meal-section">
@@ -735,7 +738,7 @@
                     : null;
                 
                 return {
-                    date: r.date,
+                    date: r.date.slice(0, 10),
                     fullness: avgFullness ? parseFloat(avgFullness) : null
                 };
             }).filter(function(t) {
@@ -748,16 +751,18 @@
             }
             
             var ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
             var width = canvas.offsetWidth;
-            var height = 180;
-            canvas.width = width;
-            canvas.height = height;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            var padding = { top: 25, right: 20, bottom: 30, left: 45 };
+            var height = canvas.offsetHeight;
+            var padding = { top: 20, right: 15, bottom: 35, left: 40 };
             var chartWidth = width - padding.left - padding.right;
             var chartHeight = height - padding.top - padding.bottom;
+            
+            ctx.clearRect(0, 0, width, height);
             
             var allFullness = trend.map(function(t) { return t.fullness; });
             var minFullness = allFullness.length > 0 ? Math.min.apply(Math, allFullness) - 1 : 0;
@@ -837,7 +842,7 @@
             
             var trend = records.map(function(r) {
                 return {
-                    date: r.date,
+                    date: r.date.slice(0, 10),
                     hunger: r.hunger && r.hunger.times !== undefined ? r.hunger.times : 0
                 };
             }).filter(function(t) {
@@ -850,16 +855,18 @@
             }
             
             var ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
             var width = canvas.offsetWidth;
-            var height = 180;
-            canvas.width = width;
-            canvas.height = height;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            var padding = { top: 25, right: 20, bottom: 30, left: 45 };
+            var height = canvas.offsetHeight;
+            var padding = { top: 20, right: 15, bottom: 35, left: 40 };
             var chartWidth = width - padding.left - padding.right;
             var chartHeight = height - padding.top - padding.bottom;
+            
+            ctx.clearRect(0, 0, width, height);
             
             var allHunger = trend.map(function(t) { return t.hunger; });
             var maxHunger = allHunger.length > 0 ? Math.max.apply(Math, allHunger) + 1 : 5;
