@@ -611,16 +611,18 @@ textarea.form-control {
     display: flex;
     gap: 8px;
     margin-top: 8px;
+    align-items: center;
 }
 
 .meal-submit-btn {
-    flex: 2;
+    flex: 1;
     background: var(--success-color);
     color: white;
-    padding: 8px 12px;
-    font-size: 13px;
-    height: 36px;
-    box-sizing: border-box;
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: none;
+    transition: background 0.2s;
 }
 
 .meal-submit-btn:hover {
@@ -628,20 +630,24 @@ textarea.form-control {
 }
 
 .btn-cancel {
-    flex: 1;
-    padding: 8px 12px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 50%;
+    background: #F5F7FA;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
     font-size: 12px;
-    background: linear-gradient(135deg, #FFF5F5 0%, #FFE0E0 100%);
-    color: #E53935;
-    border: 1px solid #FFCDD2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s;
-    height: 36px;
-    box-sizing: border-box;
 }
 
 .btn-cancel:hover {
-    background: #FFE0E0;
-    border-color: #EF9A9A;
+    background: #E8ECF0;
+    color: var(--text-primary);
+    border-color: var(--primary-color);
 }
 
 .full-submit-btn {

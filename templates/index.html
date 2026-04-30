@@ -333,6 +333,11 @@
                 document.getElementById('lunch-food').value = '';
                 document.getElementById('dinner-food').value = '';
                 
+                // 隐藏所有取消按钮
+                document.getElementById('btn-cancel-breakfast').style.display = 'none';
+                document.getElementById('btn-cancel-lunch').style.display = 'none';
+                document.getElementById('btn-cancel-dinner').style.display = 'none';
+                
                 // 初始化饱腹感为默认值（7分）
                 document.getElementById('breakfast-fullness').value = '7';
                 document.getElementById('lunch-fullness').value = '7';
