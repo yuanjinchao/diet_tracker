@@ -688,11 +688,12 @@
             }
         }
         
-        async function loadTrend() {
-            var response = await fetch('/api/weight-trend');
-            var trend = await response.json();
+        function drawLineChart(canvasId, data, config) {
+            var canvas = document.getElementById(canvasId);
+            if (!canvas || data.length === 0) {
+                return;
+            }
             
-            var canvas = document.getElementById('weightChart');
             var ctx = canvas.getContext('2d');
             
             canvas.width = canvas.offsetWidth * window.devicePixelRatio;
@@ -707,15 +708,18 @@
             
             ctx.clearRect(0, 0, width, height);
             
-            if (trend.length === 0) {
-                ctx.fillStyle = '#8F959E';
-                ctx.font = '13px -apple-system, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('暂无数据', width / 2, height / 2);
-                return;
-            }
+            // 默认配置
+            var defaultConfig = {
+                lineColor: '#5B8FF9',
+                gridColor: '#E5E6EB',
+                textColor: '#8F959E',
+                lineDash: [],
+                showChangeText: false
+            };
+            config = Object.assign(defaultConfig, config);
             
-            ctx.strokeStyle = '#E5E6EB';
+            // 绘制网格线
+            ctx.strokeStyle = config.gridColor;
             ctx.lineWidth = 1;
             for (var i = 0; i <= 4; i++) {
                 var y = padding.top + (chartHeight / 4) * i;
@@ -725,35 +729,40 @@
                 ctx.stroke();
             }
             
-            var weights = trend.map(function(t) { return t.weight; });
-            var minWeight = Math.min.apply(Math, weights) - 1;
-            var maxWeight = Math.max.apply(Math, weights) + 1;
+            // 确定值范围
+            var values = data.map(function(d) { return d.value; });
+            var minValue = config.minValue !== undefined ? config.minValue : (Math.min.apply(Math, values) - 1);
+            var maxValue = config.maxValue !== undefined ? config.maxValue : (Math.max.apply(Math, values) + 1);
             
-            ctx.fillStyle = '#8F959E';
+            // 绘制Y轴标签
+            ctx.fillStyle = config.textColor;
             ctx.font = '11px -apple-system, sans-serif';
             ctx.textAlign = 'right';
             for (var i = 0; i <= 4; i++) {
-                var weight = maxWeight - ((maxWeight - minWeight) / 4) * i;
+                var value = maxValue - ((maxValue - minValue) / 4) * i;
                 var y = padding.top + (chartHeight / 4) * i;
-                ctx.fillText(weight.toFixed(0), padding.left - 8, y + 3);
+                ctx.fillText(value.toFixed(0), padding.left - 8, y + 3);
             }
             
+            // 绘制X轴标签
             ctx.textAlign = 'center';
-            var step = Math.max(1, Math.floor(trend.length / 5));
-            trend.forEach(function(t, i) {
-                if (i % step === 0 || i === trend.length - 1) {
-                    var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                    ctx.fillText(t.date.slice(5), x, height - 12);
+            var step = Math.max(1, Math.floor(data.length / 5));
+            data.forEach(function(d, i) {
+                if (i % step === 0 || i === data.length - 1) {
+                    var x = padding.left + (chartWidth / (data.length - 1 || 1)) * i;
+                    ctx.fillText(d.date.slice(5), x, height - 12);
                 }
             });
             
-            ctx.strokeStyle = '#5B8FF9';
+            // 绘制数据线
+            ctx.strokeStyle = config.lineColor;
             ctx.lineWidth = 2.5;
+            ctx.setLineDash(config.lineDash);
             ctx.beginPath();
             
-            trend.forEach(function(t, i) {
-                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                var y = padding.top + chartHeight - ((t.weight - minWeight) / (maxWeight - minWeight)) * chartHeight;
+            data.forEach(function(d, i) {
+                var x = padding.left + (chartWidth / (data.length - 1 || 1)) * i;
+                var y = padding.top + chartHeight - ((d.value - minValue) / (maxValue - minValue)) * chartHeight;
                 
                 if (i === 0) {
                     ctx.moveTo(x, y);
@@ -762,11 +771,13 @@
                 }
             });
             ctx.stroke();
+            ctx.setLineDash([]);
             
-            ctx.fillStyle = '#5B8FF9';
-            trend.forEach(function(t, i) {
-                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                var y = padding.top + chartHeight - ((t.weight - minWeight) / (maxWeight - minWeight)) * chartHeight;
+            // 绘制数据点
+            ctx.fillStyle = config.lineColor;
+            data.forEach(function(d, i) {
+                var x = padding.left + (chartWidth / (data.length - 1 || 1)) * i;
+                var y = padding.top + chartHeight - ((d.value - minValue) / (maxValue - minValue)) * chartHeight;
                 
                 ctx.beginPath();
                 ctx.arc(x, y, 4, 0, Math.PI * 2);
@@ -776,19 +787,54 @@
                 ctx.beginPath();
                 ctx.arc(x, y, 2, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.fillStyle = '#5B8FF9';
+                ctx.fillStyle = config.lineColor;
             });
             
-            if (trend.length > 1) {
-                var lastWeight = trend[trend.length - 1].weight;
-                var firstWeight = trend[0].weight;
-                var change = (lastWeight - firstWeight).toFixed(1);
+            // 显示变化文本
+            if (config.showChangeText && data.length > 1) {
+                var lastValue = data[data.length - 1].value;
+                var firstValue = data[0].value;
+                var change = (lastValue - firstValue).toFixed(1);
                 
                 ctx.fillStyle = change < 0 ? '#52C41A' : '#FF4D4F';
                 ctx.font = 'bold 12px -apple-system, sans-serif';
                 ctx.textAlign = 'left';
-                ctx.fillText((change < 0 ? '↓ ' + Math.abs(change) : '↑ ' + change) + 'kg', padding.left, 15);
+                ctx.fillText((change < 0 ? '↓ ' + Math.abs(change) : '↑ ' + change) + (config.unit || ''), padding.left, 15);
             }
+        }
+        
+        async function loadTrend() {
+            var response = await fetch('/api/weight-trend');
+            var trendData = await response.json();
+            
+            if (trendData.length === 0) {
+                var canvas = document.getElementById('weightChart');
+                var ctx = canvas.getContext('2d');
+                
+                canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+                canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+                ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                
+                var width = canvas.offsetWidth;
+                var height = canvas.offsetHeight;
+                
+                ctx.clearRect(0, 0, width, height);
+                ctx.fillStyle = '#8F959E';
+                ctx.font = '13px -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', width / 2, height / 2);
+                return;
+            }
+            
+            var data = trendData.map(function(t) {
+                return { date: t.date, value: t.weight };
+            });
+            
+            drawLineChart('weightChart', data, {
+                lineColor: '#5B8FF9',
+                showChangeText: true,
+                unit: 'kg'
+            });
         }
         
         async function loadFullnessTrend() {
@@ -799,7 +845,7 @@
                 return new Date(a.date) - new Date(b.date);
             });
             
-            var trend = records.map(function(r) {
+            var data = records.map(function(r) {
                 var food = r.food || {};
                 var fullnessValues = [];
                 
@@ -811,101 +857,24 @@
                 });
                 
                 var avgFullness = fullnessValues.length > 0 
-                    ? (fullnessValues.reduce(function(a, b) { return a + b; }, 0) / fullnessValues.length).toFixed(1)
+                    ? parseFloat((fullnessValues.reduce(function(a, b) { return a + b; }, 0) / fullnessValues.length).toFixed(1))
                     : null;
                 
                 return {
                     date: r.date.slice(0, 10),
-                    fullness: avgFullness ? parseFloat(avgFullness) : null
+                    value: avgFullness
                 };
             }).filter(function(t) {
-                return t.fullness !== null;
+                return t.value !== null;
             });
             
-            var canvas = document.getElementById('fullnessChart');
-            if (!canvas || trend.length === 0) {
-                return;
-            }
+            if (data.length === 0) return;
             
-            var ctx = canvas.getContext('2d');
-            
-            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            
-            var width = canvas.offsetWidth;
-            var height = canvas.offsetHeight;
-            var padding = { top: 20, right: 15, bottom: 35, left: 40 };
-            var chartWidth = width - padding.left - padding.right;
-            var chartHeight = height - padding.top - padding.bottom;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            var allFullness = trend.map(function(t) { return t.fullness; });
-            var minFullness = allFullness.length > 0 ? Math.min.apply(Math, allFullness) - 1 : 0;
-            var maxFullness = allFullness.length > 0 ? Math.max.apply(Math, allFullness) + 1 : 10;
-            
-            ctx.fillStyle = '#8F959E';
-            ctx.font = '11px -apple-system, sans-serif';
-            ctx.textAlign = 'right';
-            
-            for (var i = 0; i <= 4; i++) {
-                var value = maxFullness - ((maxFullness - minFullness) / 4) * i;
-                var y = padding.top + (chartHeight / 4) * i;
-                ctx.fillText(value.toFixed(0), padding.left - 8, y + 3);
-            }
-            
-            ctx.textAlign = 'center';
-            var step = Math.max(1, Math.floor(trend.length / 5));
-            trend.forEach(function(t, i) {
-                if (i % step === 0 || i === trend.length - 1) {
-                    var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                    ctx.fillText(t.date.slice(5), x, height - 12);
-                }
-            });
-            
-            ctx.strokeStyle = '#E8E8E8';
-            ctx.lineWidth = 1;
-            for (var i = 0; i <= 4; i++) {
-                var y = padding.top + (chartHeight / 4) * i;
-                ctx.beginPath();
-                ctx.moveTo(padding.left, y);
-                ctx.lineTo(width - padding.right, y);
-                ctx.stroke();
-            }
-            
-            ctx.strokeStyle = '#52C41A';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            var started = false;
-            
-            trend.forEach(function(t, i) {
-                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                var y = padding.top + chartHeight - ((t.fullness - minFullness) / (maxFullness - minFullness)) * chartHeight;
-                
-                if (!started) {
-                    ctx.moveTo(x, y);
-                    started = true;
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            });
-            ctx.stroke();
-            
-            ctx.fillStyle = '#52C41A';
-            trend.forEach(function(t, i) {
-                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                var y = padding.top + chartHeight - ((t.fullness - minFullness) / (maxFullness - minFullness)) * chartHeight;
-                
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = '#FFFFFF';
-                ctx.beginPath();
-                ctx.arc(x, y, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#52C41A';
+            drawLineChart('fullnessChart', data, {
+                lineColor: '#52C41A',
+                gridColor: '#E8E8E8',
+                minValue: 0,
+                maxValue: 10
             });
         }
         
@@ -917,100 +886,24 @@
                 return new Date(a.date) - new Date(b.date);
             });
             
-            var trend = records.map(function(r) {
+            var data = records.map(function(r) {
                 return {
                     date: r.date.slice(0, 10),
-                    hunger: r.hunger && r.hunger.times !== undefined ? r.hunger.times : 0
+                    value: r.hunger && r.hunger.times !== undefined ? r.hunger.times : 0
                 };
-            }).filter(function(t) {
-                return t.hunger >= 0;
             });
             
-            var canvas = document.getElementById('hungerChart');
-            if (!canvas || trend.length === 0) {
-                return;
-            }
+            if (data.length === 0) return;
             
-            var ctx = canvas.getContext('2d');
-            
-            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-            
-            var width = canvas.offsetWidth;
-            var height = canvas.offsetHeight;
-            var padding = { top: 20, right: 15, bottom: 35, left: 40 };
-            var chartWidth = width - padding.left - padding.right;
-            var chartHeight = height - padding.top - padding.bottom;
-            
-            ctx.clearRect(0, 0, width, height);
-            
-            var allHunger = trend.map(function(t) { return t.hunger; });
+            var allHunger = data.map(function(t) { return t.value; });
             var maxHunger = allHunger.length > 0 ? Math.max.apply(Math, allHunger) + 1 : 5;
             
-            ctx.fillStyle = '#8F959E';
-            ctx.font = '11px -apple-system, sans-serif';
-            ctx.textAlign = 'right';
-            
-            for (var i = 0; i <= 4; i++) {
-                var value = maxHunger - (maxHunger / 4) * i;
-                var y = padding.top + (chartHeight / 4) * i;
-                ctx.fillText(value.toFixed(0), padding.left - 8, y + 3);
-            }
-            
-            ctx.textAlign = 'center';
-            var step = Math.max(1, Math.floor(trend.length / 5));
-            trend.forEach(function(t, i) {
-                if (i % step === 0 || i === trend.length - 1) {
-                    var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                    ctx.fillText(t.date.slice(5), x, height - 12);
-                }
-            });
-            
-            ctx.strokeStyle = '#E8E8E8';
-            ctx.lineWidth = 1;
-            for (var i = 0; i <= 4; i++) {
-                var y = padding.top + (chartHeight / 4) * i;
-                ctx.beginPath();
-                ctx.moveTo(padding.left, y);
-                ctx.lineTo(width - padding.right, y);
-                ctx.stroke();
-            }
-            
-            ctx.strokeStyle = '#F56565';
-            ctx.lineWidth = 2.5;
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            var started = false;
-            
-            trend.forEach(function(t, i) {
-                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                var y = padding.top + chartHeight - (t.hunger / maxHunger) * chartHeight;
-                
-                if (!started) {
-                    ctx.moveTo(x, y);
-                    started = true;
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            });
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            ctx.fillStyle = '#F56565';
-            trend.forEach(function(t, i) {
-                var x = padding.left + (chartWidth / (trend.length - 1 || 1)) * i;
-                var y = padding.top + chartHeight - (t.hunger / maxHunger) * chartHeight;
-                
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = '#FFFFFF';
-                ctx.beginPath();
-                ctx.arc(x, y, 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#F56565';
+            drawLineChart('hungerChart', data, {
+                lineColor: '#F56565',
+                gridColor: '#E8E8E8',
+                lineDash: [5, 5],
+                minValue: 0,
+                maxValue: maxHunger
             });
         }
         
