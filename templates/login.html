@@ -88,6 +88,22 @@
             color: #060;
             border: 1px solid #cfc;
         }
+        .remember-me {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .remember-me input {
+            width: auto;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        .remember-me label {
+            margin-bottom: 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
         .links {
             text-align: center;
             margin-top: 20px;
@@ -115,6 +131,10 @@
                 <label for="password">密码</label>
                 <input type="password" id="password" name="password" placeholder="请输入密码" required>
             </div>
+            <div class="remember-me">
+                <input type="checkbox" id="rememberMe" name="rememberMe">
+                <label for="rememberMe">记住密码</label>
+            </div>
             <button type="submit" class="btn" id="submitBtn">登录</button>
         </form>
         <div class="links">
@@ -126,6 +146,9 @@
         const form = document.getElementById('loginForm');
         const messageEl = document.getElementById('message');
         const submitBtn = document.getElementById('submitBtn');
+        const phoneInput = document.getElementById('phone');
+        const passwordInput = document.getElementById('password');
+        const rememberMeInput = document.getElementById('rememberMe');
 
         function showMessage(text, type) {
             messageEl.textContent = text;
@@ -133,13 +156,47 @@
             messageEl.style.display = 'block';
         }
 
+        function loadRememberedCredentials() {
+            try {
+                const saved = localStorage.getItem('diet_tracker_credentials');
+                if (saved) {
+                    const credentials = JSON.parse(saved);
+                    phoneInput.value = credentials.phone || '';
+                    passwordInput.value = credentials.password || '';
+                    rememberMeInput.checked = credentials.rememberMe || false;
+                }
+            } catch (e) {
+                console.log('加载保存的账号失败:', e);
+            }
+        }
+
+        function saveCredentials(phone, password, remember) {
+            try {
+                if (remember) {
+                    localStorage.setItem('diet_tracker_credentials', JSON.stringify({
+                        phone: phone,
+                        password: password,
+                        rememberMe: true
+                    }));
+                } else {
+                    localStorage.removeItem('diet_tracker_credentials');
+                }
+            } catch (e) {
+                console.log('保存账号失败:', e);
+            }
+        }
+
+        // 页面加载时读取保存的账号密码
+        document.addEventListener('DOMContentLoaded', loadRememberedCredentials);
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             submitBtn.disabled = true;
             submitBtn.textContent = '登录中...';
 
-            const phone = document.getElementById('phone').value;
-            const password = document.getElementById('password').value;
+            const phone = phoneInput.value;
+            const password = passwordInput.value;
+            const rememberMe = rememberMeInput.checked;
 
             try {
                 const response = await fetch('/api/auth/login', {
@@ -153,6 +210,8 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    // 根据勾选状态保存/删除密码
+                    saveCredentials(phone, rememberMe ? password : '', rememberMe);
                     showMessage('登录成功！正在跳转...', 'success');
                     setTimeout(() => {
                         window.location.href = '/';
