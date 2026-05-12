@@ -12,6 +12,12 @@
         <div class="header">
             <h1>🏃 减肥打卡</h1>
             <p class="subtitle">坚持每一天，遇见更好的自己</p>
+            <div class="header-right">
+                <span class="username">👤 {{ user.username }}</span>
+                <button type="button" class="logout-btn" onclick="logout()">
+                    🚪 退出
+                </button>
+            </div>
         </div>
         
         <div class="stats-row">
@@ -247,6 +253,17 @@
         var selectedExercise = '跑步';
         var selectedDuration = 30;
         
+        async function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                var response = await fetch('/api/auth/logout', {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                }
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             var today = new Date().toISOString().split('T')[0];
             document.getElementById('recordDate').value = today;
@@ -377,58 +394,74 @@
         }
         
         async function submitMeal(meal) {
-            var date = document.getElementById('recordDate').value;
-            var weight = document.getElementById('weight').value || null;
-            var foodInput = document.getElementById(meal + '-food');
-            var description = foodInput.value || '-';
-            var fullness = fullnessData[meal];
-            
-            var exercise = document.querySelector('input[name="exercise"]:checked').value === 'true';
-            var exercise_info = exercise ? { name: selectedExercise, duration: selectedDuration } : null;
-            
-            var response = await fetch('/api/records', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    date: date,
-                    weight: weight,
-                    food: {
-                        [meal]: {
-                            fullness: fullness,
-                            description: description,
-                            recorded: true
-                        }
-                    },
-                    exercise: exercise,
-                    exercise_info: exercise_info,
-                    hunger: hungerData
-                })
-            });
-            
-            var record = await response.json();
-            
-            mealCompleted[meal] = true;
-            updateProgress();
-            
-            var cancelBtn = document.getElementById('btn-cancel-' + meal);
-            if (cancelBtn) cancelBtn.style.display = 'block';
-            
-            var feedback = document.getElementById('feedback');
-            var mealText = meal === 'breakfast' ? '早餐' : (meal === 'lunch' ? '午餐' : '晚餐');
-            feedback.textContent = '✅ ' + mealText + '记录成功！';
-            feedback.classList.remove('success', 'warning');
-            feedback.classList.add('success');
-            feedback.style.display = 'block';
-            
-            setTimeout(function() {
-                feedback.style.display = 'none';
-            }, 3000);
-            
-            loadRecords();
-            loadTrend();
-            loadFullnessTrend();
-            loadHungerTrend();
-            updateStats();
+            try {
+                var date = document.getElementById('recordDate').value;
+                var weight = document.getElementById('weight').value || null;
+                var foodInput = document.getElementById(meal + '-food');
+                var description = foodInput.value || '-';
+                var fullness = fullnessData[meal];
+                
+                var exercise = document.querySelector('input[name="exercise"]:checked').value === 'true';
+                var exercise_info = exercise ? { name: selectedExercise, duration: selectedDuration } : null;
+                
+                var response = await fetch('/api/records', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        date: date,
+                        weight: weight,
+                        food: {
+                            [meal]: {
+                                fullness: fullness,
+                                description: description,
+                                recorded: true
+                            }
+                        },
+                        exercise: exercise,
+                        exercise_info: exercise_info,
+                        hunger: hungerData
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('服务器返回错误: ' + response.status);
+                }
+                
+                var record = await response.json();
+                
+                mealCompleted[meal] = true;
+                updateProgress();
+                
+                var cancelBtn = document.getElementById('btn-cancel-' + meal);
+                if (cancelBtn) cancelBtn.style.display = 'block';
+                
+                var feedback = document.getElementById('feedback');
+                var mealText = meal === 'breakfast' ? '早餐' : (meal === 'lunch' ? '午餐' : '晚餐');
+                feedback.textContent = '✅ ' + mealText + '记录成功！';
+                feedback.classList.remove('success', 'warning');
+                feedback.classList.add('success');
+                feedback.style.display = 'block';
+                
+                setTimeout(function() {
+                    feedback.style.display = 'none';
+                }, 3000);
+                
+                loadRecords();
+                loadTrend();
+                loadFullnessTrend();
+                loadHungerTrend();
+                updateStats();
+            } catch (error) {
+                console.error('提交失败:', error);
+                var feedback = document.getElementById('feedback');
+                feedback.textContent = '❌ 提交失败，请重试';
+                feedback.classList.remove('success', 'warning');
+                feedback.classList.add('warning');
+                feedback.style.display = 'block';
+                setTimeout(function() {
+                    feedback.style.display = 'none';
+                }, 3000);
+            }
         }
         
         async function cancelMeal(meal) {
